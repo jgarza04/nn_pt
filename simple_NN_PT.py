@@ -26,52 +26,8 @@ x = torch.randn(64, 784)
 print(model(x).shape) # [64, 10]
 """
 
-# Set device
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-# Hyperparameters
-input_size = 784
-num_classes = 10
-learning_rate = 0.001
-batch_size = 64
-num_epochs = 10
-
-# Load Data
-train_dataset = datasets.MNIST(root="dataset/", train=True, transform=transforms.ToTensor(), download=True)
-train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
-
-test_dataset = datasets.MNIST(root="dataset/", train=False, transform=transforms.ToTensor(), download=True)
-test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=True)
-
-# Initialize Network
-model = NN(input_size= input_size, num_classes= num_classes).to(device)
-
-# Loss and Optimizer
-criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-
-# Train Network
-for epoch in range(num_epochs):
-    for batch_idx, (data, targets) in enumerate(train_loader):
-        # If possible, get data to cuda
-        data = data.to(device)
-        targets = targets.to(device=device)
-        
-        data = data.reshape(data.shape[0], -1)    
-
-        # Forward pass
-        scores = model(data)
-        loss = criterion(scores, targets)
-
-        # Backward pass
-        optimizer.zero_grad() # Reset gradients to 0
-        loss.backward() # Calling backward propagation
-
-        # Gradient descent or Adam step
-        optimizer.step() # Update weights and biases depending on the optimizer
-
 # Check accuracy on training & test to see how good our model is
-def check_accuracy(loader, model):
+def check_accuracy(loader, model, device):
     if loader.dataset.train:
         print("Checking accuracy on training data")
     else:
@@ -97,5 +53,55 @@ def check_accuracy(loader, model):
     model.train()
     return num_correct / num_samples
 
-check_accuracy(train_loader, model)
-check_accuracy(test_loader, model)
+
+if __name__ == "__main__":
+    # Set device
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    # Hyperparameters
+    input_size = 784
+    num_classes = 10
+    learning_rate = 0.001
+    batch_size = 64
+    num_epochs = 50
+
+    # Load Data
+    train_dataset = datasets.MNIST(root="dataset/", train=True, transform=transforms.ToTensor(), download=True)
+    train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
+
+    test_dataset = datasets.MNIST(root="dataset/", train=False, transform=transforms.ToTensor(), download=True)
+    test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=True)
+
+    # Initialize Network
+    model = NN(input_size= input_size, num_classes= num_classes).to(device)
+
+    # Loss and Optimizer
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+
+    # Train Network
+    for epoch in range(num_epochs):
+        for batch_idx, (data, targets) in enumerate(train_loader):
+            # If possible, get data to cuda
+            data = data.to(device)
+            targets = targets.to(device=device)
+            
+            data = data.reshape(data.shape[0], -1)    
+
+            # Forward pass
+            scores = model(data)
+            loss = criterion(scores, targets)
+
+            # Backward pass
+            optimizer.zero_grad() # Reset gradients to 0
+            loss.backward() # Calling backward propagation
+
+            # Gradient descent or Adam step
+            optimizer.step() # Update weights and biases depending on the optimizer
+
+    check_accuracy(train_loader, model, device)
+    check_accuracy(test_loader, model, device)
+
+    # Save the trained model
+    torch.save(model.state_dict(), "mnist_model.pth")
+    print("Model saved to mnist_model.pth")
